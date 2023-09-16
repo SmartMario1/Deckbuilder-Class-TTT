@@ -1,0 +1,186 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using System.Collections.Generic;
+@using TerrorTown;
+@using System.Linq;
+@using SmartMario1Classes;
+@inherits Panel
+
+<style>
+    .bgbg {
+        width: 100vw;
+        height: 100vh;
+        pointer-events: all;
+        position: absolute;
+    }
+
+    .title {
+        font-size: 72px;
+        justify-content: center;
+        align-items: center;
+        text-shadow: 2px 2px 4px darkgray;
+        margin: 10px;
+    }
+
+    .bg {
+        background-color: rgba(100, 100, 100, 0.65);
+        width: 75vw;
+        height: 60vh;
+        margin-left: 5vw;
+        margin-top: 15vh;
+        display: flex;
+        pointer-events: all;
+        flex-direction: column; /* Ensure list items are displayed vertically */
+    }
+
+    .playerlist {
+        width: 100%;
+        height: 100%;
+        flex-direction: row;
+        justify-content: space-evenly;
+    }
+
+    .card {
+        background-color: #bfc7c6;
+        width: 320px;
+        height: 480px;
+        padding: 20px;
+        margin: 10px;
+        font-size: 24px;
+        border: 1px solid #000;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .card-bg {
+        background-size: cover;
+        margin: 10px;
+        margin-bottom: 5px;
+        width: 250px;
+        height: 180px;
+        border: 1px black;
+        z-index: 1;
+    }
+
+    .card:hover {
+        background-color: #e3e3e3;
+    }
+
+    .card-title {
+        font-size: 32px;
+        font-weight: bold;
+        text-align: center;
+        align-content: center;
+        justify-content: center;
+    }
+
+    .card-desc {
+        font-size: 24px;
+        text-align: center;
+        margin: 10px;
+        margin-top: 5px;
+        padding: 4px;
+        border: 1px black;
+        height: 180px;
+        background-color: #f5efe4;
+    }
+    .hello {
+        max-width: 100%;
+        padding: 10px;
+        margin: 10px;
+        min-height: 62px;
+        font-size: 32px;
+        border-radius: 4px;
+        text-shadow: 2px 2px 4px darkgray;
+        background-color: rgba(200, 200, 200, 0.65);
+        align-items: center;
+        justify-content: center;
+        border: 2px #333;
+    }
+
+</style>
+
+<root>
+    @*This div stops people shooting while voting*@
+    <div class="bgbg">
+        <div class="bg">
+            <div class="title">
+                Pick a card, any card!
+            </div>
+            <div class="playerlist">
+                @foreach(var card in Cards)
+                {
+                    <div class="card" onmousedown=@(() => ChooseCard(card.LowercaseNospaceName))>
+                        <div class="card-bg" style="background-image: @(("url(ui/cards/" + card.LowercaseNospaceName + ".png)"));">
+                        </div>
+                        <div class="card-title">
+                            @card.Name
+                        </div>
+                        <div class="card-desc">
+                            @card.Description
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</root>
+
+@code
+{
+    private readonly int CARD_AMOUNT = 3;
+
+    private List<ClassCard> Cards = new List<ClassCard>();
+
+    public CardSelect()
+    {
+        Log.Info("UI now exists");
+
+        DrawCards();
+    }
+
+    private void DrawCards()
+    {
+        var cards = Game.LocalPawn.Components.Get<Roguelike>().CardNames;
+        for(int i = 0; i < CARD_AMOUNT; i++)
+        {
+            var card = GetRandomCard();
+            if (Cards.Where(x => x.LowercaseNospaceName == card.LowercaseNospaceName).Count() >= 1 || (card.IsUnique && cards.Contains(card.LowercaseNospaceName)))
+            {
+                i--;
+                continue;
+            }
+            Cards.Add(card);
+
+        }
+    }
+
+    public void ChooseCard(string cardname)
+    {
+        Log.Info("Chose " + cardname);
+        ConsoleSystem.Run("class_roguelike_class_toggle_ui");
+        ConsoleSystem.Run("class_roguelike_class_pick_card", cardname);
+        var f = Game.LocalPawn.Components.Get<Roguelike>().CardNames;
+        Log.Info("Previous cards:");
+        foreach (string s in f)
+        {
+            Log.Info("card: " + s);
+        }
+        
+    }
+
+    private ClassCard GetRandomCard()
+    {
+        return Roguelike.Cards.ElementAt(Game.Random.Int(0, Roguelike.Cards.Count - 1));
+    }
+
+    protected override int BuildHash()
+    {
+        return Sandbox.Time.Now.GetHashCode();
+    }
+}
